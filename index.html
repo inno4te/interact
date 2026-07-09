@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ForTeInter — Live Session</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;600&family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -110,7 +110,7 @@
   .tag{
     display:inline-flex; align-items:center; gap:8px;
     padding:0.4em 0.95em; border-radius:999px; line-height:1.3;
-    font-weight:600; white-space:nowrap; color:var(--text);
+    font-weight:700; white-space:nowrap;
     animation: bob 5s ease-in-out infinite;
     transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
@@ -332,6 +332,15 @@ function hashStr(s){
   return Math.abs(h);
 }
 
+/* palette of dark, saturated tones that stay legible on the light surface */
+const TAG_COLORS = ['#9C7A3C','#7A1F2B','#2F6B5E','#3D4E8C','#7A3C74','#3E7A3C','#A85A2E','#3C5A78'];
+const TAG_FONTS = [
+  { family: "'Poppins', sans-serif", weight: 600 },
+  { family: "'Inter', sans-serif", weight: 700 },
+  { family: "'Fraunces', serif", weight: 600 },
+  { family: "'Space Grotesk', sans-serif", weight: 600 }
+];
+
 function setStatus(state){ // 'live' | 'connecting' | 'offline'
   liveDot.classList.remove('status-live','status-connecting','status-offline');
   liveDot.classList.add('status-' + state);
@@ -367,28 +376,39 @@ sendBtn.addEventListener('click', submitEntry);
 /* ---------- Google Apps Script backend ---------- */
 async function fetchEntries(){
   try{
-    const res = await fetch(GAS_URL + '?action=list');
+    const res = await fetch(GAS_URL + '?action=list&_=' + Date.now(), { cache: 'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
+    if(data && data.error) throw new Error(data.error);
     entries = Array.isArray(data) ? data : [];
     setStatus('live');
     return true;
   }catch(e){
+    console.error('fetchEntries failed:', e);
     setStatus('offline');
     return false;
   }
 }
 
 async function postEntry(type, text){
-  await fetch(GAS_URL, {
+  const res = await fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ type, text })
+    body: JSON.stringify({ type, text }),
+    cache: 'no-store'
   });
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if(data && data.error) throw new Error(data.error);
+  return data;
 }
 
 async function clearRemote(){
-  const res = await fetch(GAS_URL + '?action=clear&key=' + encodeURIComponent(ADMIN_CODE));
-  return res.json();
+  const res = await fetch(GAS_URL + '?action=clear&key=' + encodeURIComponent(ADMIN_CODE) + '&_=' + Date.now(), { cache: 'no-store' });
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if(data && data.error) throw new Error(data.error);
+  return data;
 }
 
 async function submitEntry(){
@@ -404,7 +424,8 @@ async function submitEntry(){
     await fetchEntries();
     render();
   }catch(e){
-    statusLine.textContent = "Couldn't send — check your connection and try again.";
+    console.error('submitEntry failed:', e);
+    statusLine.textContent = "Couldn't send — " + (e.message || 'check your connection') + '.';
     setStatus('offline');
   }
   updateSendState();
@@ -456,6 +477,11 @@ function render(){
       el.className = 'tag raised';
       el.style.fontSize = fontSize + 'px';
       const h = hashStr(item.display);
+      const color = TAG_COLORS[h % TAG_COLORS.length];
+      const fontChoice = TAG_FONTS[Math.floor(h / TAG_COLORS.length) % TAG_FONTS.length];
+      el.style.color = color;
+      el.style.fontFamily = fontChoice.family;
+      el.style.fontWeight = fontChoice.weight;
       el.style.animationDelay = (h % 50) / 10 + 's';
       el.style.animationDuration = (4 + (h % 30) / 10) + 's';
       el.innerHTML = icon + ' ' + escapeHtml(item.display) +
