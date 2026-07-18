@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ForTeInter — Live Session</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;600&family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -20,6 +20,7 @@
     --status-green:#3C8F5E;
     --status-yellow:#D9A63C;
     --status-red:#B23A3A;
+    --dock-h:0px;
   }
   *{ box-sizing:border-box; }
   html,body{ height:100%; }
@@ -71,9 +72,9 @@
     transition: background 0.3s ease;
     flex-shrink:0;
   }
-  .live-dot.status-live{ animation: pulse-green 1.8s infinite; }
+  .live-dot.status-live{ background:var(--status-green); animation: pulse-green 1.8s infinite; }
   .live-dot.status-connecting{ animation: pulse-yellow 1.1s infinite; }
-  .live-dot.status-offline{ animation:none; }
+  .live-dot.status-offline{ background:var(--status-red); animation:none; }
   @keyframes pulse-green{
     0%{ box-shadow:0 0 0 0 rgba(60,143,94,0.5); }
     70%{ box-shadow:0 0 0 8px rgba(60,143,94,0); }
@@ -98,37 +99,86 @@
   }
   .admin-btn:active{ box-shadow: inset 3px 3px 6px var(--sh-dark), inset -3px -3px 6px var(--sh-light); }
 
+  /* ---- growing board ---- */
   main{
-    flex:1; display:flex; align-items:center; justify-content:center;
-    padding:20px 16px 260px; min-height:340px;
+    flex:1;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:20px 16px 40px;
+    min-height:340px;
+    transition: min-height 0.4s ease;
   }
+  body{ padding-bottom:250px; } /* space for fixed dock */
+
   .cloud{
     max-width:1000px; width:100%;
     display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
+    align-content:flex-start;
     gap:16px 18px; padding:20px;
+    transition: max-width 0.4s ease;
   }
+  /* the board widens as the session fills up */
+  .cloud.density-2{ max-width:1200px; }
+  .cloud.density-3{ max-width:1400px; }
+
+  /* professional grid mode for busy boards */
+  .cloud.grid-mode{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:14px;
+    align-items:stretch;
+  }
+  .cloud.grid-mode .tag{
+    animation:none;
+    border-radius:18px;
+    justify-content:flex-start;
+    width:100%;
+    font-size:15px !important;
+  }
+
   .tag{
-    display:inline-flex; align-items:center; gap:8px;
-    padding:0.4em 0.95em; border-radius:999px; line-height:1.3;
-    font-weight:700; white-space:nowrap;
+    display:inline-flex; align-items:flex-start; gap:8px;
+    padding:0.55em 1em; border-radius:20px; line-height:1.4;
+    font-weight:600; color:var(--text);
+    max-width:min(420px, 90vw);
+    white-space:normal;
+    overflow-wrap:anywhere;
     animation: bob 5s ease-in-out infinite;
     transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
+  .tag .txt{ flex:1; min-width:0; }
+  .tag .icn{ flex-shrink:0; }
   .tag:hover{ box-shadow: inset 4px 4px 8px var(--sh-dark), inset -4px -4px 8px var(--sh-light); }
-  .tag .count{ font-size:0.7em; color:var(--muted); font-weight:700; }
+  .tag .count{
+    font-size:0.72em; font-weight:700; flex-shrink:0;
+    align-self:center; padding:2px 7px; border-radius:999px;
+    background:rgba(51,53,74,0.08); color:inherit; opacity:0.75;
+  }
   @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
 
-  .empty{ text-align:center; color:var(--muted); max-width:360px; }
+  /* text effects */
+  .fx-glow{ text-shadow:0 0 8px currentColor, 0 0 18px currentColor; }
+  .fx-shadow{ text-shadow:2px 2px 3px rgba(0,0,0,0.35); }
+  .fx-outline{ -webkit-text-stroke:0.5px rgba(0,0,0,0.55); }
+  .fx-gradient .txt{
+    background:linear-gradient(100deg, var(--gold), var(--red));
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent;
+  }
+  .fx-bold .txt{ font-weight:700; letter-spacing:0.01em; }
+
+  .empty{ text-align:center; color:var(--muted); max-width:360px; margin:60px auto 0; }
   .empty .big{ font-family:'Poppins',sans-serif; font-weight:500; font-size:20px; color:var(--text); margin-bottom:8px; }
 
+  /* ---- dock ---- */
   .dock-wrap{
     position:fixed; left:0; right:0; bottom:0;
     display:flex; justify-content:center;
     padding:20px 16px 26px; pointer-events:none;
+    z-index:40;
   }
-  .dock{ pointer-events:auto; width:100%; max-width:560px; border-radius:28px; padding:22px; }
+  .dock{ pointer-events:auto; width:100%; max-width:600px; border-radius:28px; padding:20px 22px; }
 
-  .dial-row{ display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:18px; user-select:none; }
+  .dial-row{ display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:14px; user-select:none; }
   .dial-label{ font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; transition: color 0.2s ease; text-align:center; width:76px; }
   .dial-label.left.active{ color:var(--gold); }
   .dial-label.right.active{ color:var(--red); }
@@ -156,6 +206,15 @@
   .input-row input::placeholder{ color:var(--muted); }
   .input-row input:disabled{ opacity:0.6; }
 
+  .style-toggle{
+    width:48px; height:48px; flex-shrink:0; border-radius:50%; border:none;
+    background:var(--bg); color:var(--muted); font-size:18px; cursor:pointer;
+    box-shadow: 6px 6px 12px var(--sh-dark), -6px -6px 12px var(--sh-light);
+    display:flex; align-items:center; justify-content:center;
+    transition: all 0.15s ease;
+  }
+  .style-toggle.open{ box-shadow: inset 4px 4px 8px var(--sh-dark), inset -4px -4px 8px var(--sh-light); color:var(--text); }
+
   .send-btn{
     width:48px; height:48px; flex-shrink:0; border-radius:50%; border:none;
     background:var(--bg);
@@ -169,9 +228,43 @@
   .send-btn.ready.question{ color:var(--red); box-shadow: 6px 6px 12px var(--sh-dark), -6px -6px 12px var(--sh-light), inset 0 0 0 2px rgba(122,31,43,0.35); }
   .send-btn:active.ready{ box-shadow: inset 4px 4px 8px var(--sh-dark), inset -4px -4px 8px var(--sh-light); }
 
-  .hint{ text-align:center; font-size:11px; color:var(--muted); margin-top:14px; }
+  /* ---- style panel ---- */
+  .style-panel{
+    display:none;
+    margin-top:14px; padding:16px;
+    border-radius:20px;
+    box-shadow: inset 5px 5px 10px var(--sh-dark), inset -5px -5px 10px var(--sh-light);
+  }
+  .style-panel.open{ display:block; }
+  .sp-row{ display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .sp-row:last-child{ margin-bottom:0; }
+  .sp-label{ font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; width:64px; flex-shrink:0; }
+  .swatches{ display:flex; gap:8px; flex-wrap:wrap; }
+  .swatch{
+    width:26px; height:26px; border-radius:50%; cursor:pointer; border:none;
+    box-shadow: 3px 3px 6px var(--sh-dark), -3px -3px 6px var(--sh-light);
+    transition: transform 0.12s ease;
+    position:relative;
+  }
+  .swatch:hover{ transform:scale(1.12); }
+  .swatch.sel{ outline:2px solid var(--text); outline-offset:2px; }
+  .swatch.none-swatch{ background:var(--bg); color:var(--muted); font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .chip{
+    border:none; cursor:pointer; padding:6px 12px; border-radius:999px;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:12px;
+    background:var(--bg); color:var(--muted);
+    box-shadow: 3px 3px 6px var(--sh-dark), -3px -3px 6px var(--sh-light);
+  }
+  .chip.sel{ box-shadow: inset 3px 3px 6px var(--sh-dark), inset -3px -3px 6px var(--sh-light); color:var(--text); }
+  .icon-chip{ font-size:16px; padding:5px 9px; }
+
+  .sp-preview{
+    margin-top:12px; text-align:center; font-size:14px;
+  }
+
+  .hint{ text-align:center; font-size:11px; color:var(--muted); margin-top:12px; }
   .status{ text-align:center; font-size:11px; color:var(--muted); height:14px; margin-top:4px; }
-  .copyright{ text-align:center; font-size:10px; color:var(--muted); opacity:0.7; margin-top:12px; }
+  .copyright{ text-align:center; font-size:10px; color:var(--muted); opacity:0.7; margin-top:10px; }
 
   /* --- modals --- */
   .modal-overlay{
@@ -213,6 +306,11 @@
   .dash-btn:active{ box-shadow: inset 4px 4px 8px var(--sh-dark), inset -4px -4px 8px var(--sh-light); }
   .dash-btn.danger{ color:var(--red); }
   .dash-close{ margin-top:14px; }
+
+  @media (max-width:640px){
+    body{ padding-bottom:300px; }
+    .sp-label{ width:100%; }
+  }
 </style>
 </head>
 <body>
@@ -249,9 +347,34 @@
       <div class="dial-label right" id="labelQuestion">❓ Question</div>
     </div>
     <div class="input-row">
-      <input id="commentInput" type="text" maxlength="100" placeholder="Choose an option above first…" disabled>
+      <input id="commentInput" type="text" maxlength="140" placeholder="Choose an option above first…" disabled>
+      <button class="style-toggle" id="styleToggle" aria-label="Style options" title="Style your message">🎨</button>
       <button class="send-btn" id="sendBtn" aria-label="Send">➤</button>
     </div>
+
+    <!-- Style panel -->
+    <div class="style-panel" id="stylePanel">
+      <div class="sp-row">
+        <div class="sp-label">Text</div>
+        <div class="swatches" id="textSwatches"></div>
+      </div>
+      <div class="sp-row">
+        <div class="sp-label">Bubble</div>
+        <div class="swatches" id="bgSwatches"></div>
+      </div>
+      <div class="sp-row">
+        <div class="sp-label">Effect</div>
+        <div class="swatches" id="fxChips"></div>
+      </div>
+      <div class="sp-row">
+        <div class="sp-label">Icon</div>
+        <div class="swatches" id="iconChips"></div>
+      </div>
+      <div class="sp-preview">
+        <span class="tag raised" id="previewTag" style="animation:none;"><span class="icn">🙌</span><span class="txt">Your message preview</span></span>
+      </div>
+    </div>
+
     <div class="hint">Everyone on this link sees the board update live.</div>
     <div class="status" id="statusLine"></div>
     <div class="copyright">© Innocent Forteh</div>
@@ -289,12 +412,45 @@
 
 <script>
 /* ======================================================
-   CONFIG — paste your deployed Google Apps Script URL here
-   (see the accompanying forteinter-google-script.gs file
-   for the code to deploy, and the setup notes below it)
+   CONFIG — Google Apps Script backend (unchanged)
    ====================================================== */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxmry1DJYIys6QX0fqmIv1BbYm9RmW2HEypt3Xia_gxdw93LXA8Jz7oJ6p1MRFHGbZCoA/exec';
 const ADMIN_CODE = '6791'; // must match ADMIN_KEY in the Apps Script
+
+/* ---------- style options ---------- */
+const TEXT_COLORS = ['', '#33354A', '#7A1F2B', '#9C7A3C', '#1F4E79', '#2E6B4F', '#5B3E8A', '#FFFFFF'];
+const BG_COLORS   = ['', '#FBEED3', '#F3D9DB', '#DCE7F5', '#DDEEE3', '#E9E0F5', '#33354A', '#FFFFFF'];
+const EFFECTS     = [['','None'], ['glow','Glow'], ['shadow','Shadow'], ['gradient','Gradient'], ['outline','Outline'], ['bold','Bold']];
+const ICONS       = ['', '🙌', '❓', '🔥', '💡', '⭐', '❤️', '🎯', '👏', '🚀', '✅'];
+
+let userStyle = { c:'', b:'', e:'', i:'' };
+
+/* Styles travel INSIDE the text field so the existing backend
+   needs no changes. Format: ~[c|b|e|i]~ prefix, stripped on render. */
+const STYLE_RE = /^~\[([^\]]*)\]~/;
+function encodeStyle(){
+  if(!userStyle.c && !userStyle.b && !userStyle.e && !userStyle.i) return '';
+  return '~[' + [userStyle.c, userStyle.b, userStyle.e, userStyle.i].join('|') + ']~';
+}
+function decodeEntry(rawText){
+  const m = STYLE_RE.exec(rawText || '');
+  if(!m) return { text: rawText || '', style: null };
+  const parts = m[1].split('|');
+  return {
+    text: rawText.slice(m[0].length),
+    style: { c: parts[0]||'', b: parts[1]||'', e: parts[2]||'', i: parts[3]||'' }
+  };
+}
+
+/* ---------- text formatting ---------- */
+function formatText(raw, type){
+  let t = (raw || '').replace(/\s+/g, ' ').trim();
+  if(!t) return '';
+  t = t.charAt(0).toUpperCase() + t.slice(1);
+  const last = t.charAt(t.length - 1);
+  if(type === 'question' && !/[?!.…]/.test(last)) t += '?';
+  return t;
+}
 
 let selectedType = null;
 let entries = [];
@@ -325,6 +481,9 @@ const clearBoardBtn = document.getElementById('clearBoardBtn');
 const exportPng = document.getElementById('exportPng');
 const exportJpg = document.getElementById('exportJpg');
 const exportPdf = document.getElementById('exportPdf');
+const styleToggle = document.getElementById('styleToggle');
+const stylePanel = document.getElementById('stylePanel');
+const previewTag = document.getElementById('previewTag');
 
 function hashStr(s){
   let h = 0;
@@ -332,19 +491,85 @@ function hashStr(s){
   return Math.abs(h);
 }
 
-/* palette of dark, saturated tones that stay legible on the light surface */
-const TAG_COLORS = ['#9C7A3C','#7A1F2B','#2F6B5E','#3D4E8C','#7A3C74','#3E7A3C','#A85A2E','#3C5A78'];
-const TAG_FONTS = [
-  { family: "'Poppins', sans-serif", weight: 600 },
-  { family: "'Inter', sans-serif", weight: 700 },
-  { family: "'Fraunces', serif", weight: 600 },
-  { family: "'Space Grotesk', sans-serif", weight: 600 }
-];
-
-function setStatus(state){ // 'live' | 'connecting' | 'offline'
+function setStatus(state){
   liveDot.classList.remove('status-live','status-connecting','status-offline');
   liveDot.classList.add('status-' + state);
   liveDot.title = state === 'live' ? 'Live' : state === 'connecting' ? 'Connecting…' : 'Not connected';
+}
+
+/* ---------- style panel UI ---------- */
+function buildSwatches(containerId, list, key){
+  const box = document.getElementById(containerId);
+  list.forEach(val => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    if(val === ''){
+      b.className = 'swatch none-swatch sel';
+      b.textContent = '∅';
+      b.title = 'Default';
+    }else{
+      b.className = 'swatch';
+      b.style.background = val;
+      b.title = val;
+    }
+    b.addEventListener('click', () => {
+      userStyle[key] = val;
+      [...box.children].forEach(c => c.classList.remove('sel'));
+      b.classList.add('sel');
+      updatePreview();
+    });
+    box.appendChild(b);
+  });
+}
+function buildChips(containerId, list, key, isIcon){
+  const box = document.getElementById(containerId);
+  list.forEach(item => {
+    const val = isIcon ? item : item[0];
+    const label = isIcon ? (item || '∅') : item[1];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip' + (isIcon ? ' icon-chip' : '') + (val === '' ? ' sel' : '');
+    b.textContent = label;
+    if(val === '' && isIcon) b.title = 'Default icon';
+    b.addEventListener('click', () => {
+      userStyle[key] = val;
+      [...box.children].forEach(c => c.classList.remove('sel'));
+      b.classList.add('sel');
+      updatePreview();
+    });
+    box.appendChild(b);
+  });
+}
+buildSwatches('textSwatches', TEXT_COLORS, 'c');
+buildSwatches('bgSwatches', BG_COLORS, 'b');
+buildChips('fxChips', EFFECTS, 'e', false);
+buildChips('iconChips', ICONS, 'i', true);
+
+styleToggle.addEventListener('click', () => {
+  stylePanel.classList.toggle('open');
+  styleToggle.classList.toggle('open');
+});
+
+function applyStyleToTag(el, style, type){
+  el.className = 'tag raised' + (style && style.e ? ' fx-' + style.e : '');
+  if(style){
+    if(style.c) el.style.color = style.c;
+    if(style.b){
+      el.style.background = style.b;
+      el.style.boxShadow = '6px 6px 12px var(--sh-dark), -6px -6px 12px var(--sh-light)';
+      // dark bubble → light text fallback
+      if(style.b === '#33354A' && !style.c) el.style.color = '#FFFFFF';
+    }
+  }
+}
+function updatePreview(){
+  const txt = formatText(input.value, selectedType) || 'Your message preview';
+  const icon = userStyle.i || (selectedType === 'question' ? '❓' : '🙌');
+  previewTag.removeAttribute('style');
+  previewTag.style.animation = 'none';
+  previewTag.innerHTML = '<span class="icn">' + icon + '</span><span class="txt">' + escapeHtml(txt) + '</span>';
+  applyStyleToTag(previewTag, userStyle, selectedType);
+  previewTag.style.animation = 'none';
 }
 
 /* ---------- selection dial ---------- */
@@ -358,6 +583,7 @@ function selectType(type){
   input.placeholder = type === 'highfive' ? 'Say what you loved…' : 'Type your question…';
   input.focus();
   updateSendState();
+  updatePreview();
 }
 function updateSendState(){
   const ready = selectedType && input.value.trim().length > 0;
@@ -369,69 +595,60 @@ function updateSendState(){
 labelHighfive.addEventListener('click', () => selectType('highfive'));
 labelQuestion.addEventListener('click', () => selectType('question'));
 dialTrack.addEventListener('click', () => selectType(selectedType === 'highfive' ? 'question' : 'highfive'));
-input.addEventListener('input', updateSendState);
+input.addEventListener('input', () => { updateSendState(); updatePreview(); });
 input.addEventListener('keydown', (e) => { if(e.key === 'Enter') submitEntry(); });
 sendBtn.addEventListener('click', submitEntry);
 
 /* ---------- Google Apps Script backend ---------- */
 async function fetchEntries(){
   try{
-    const res = await fetch(GAS_URL + '?action=list&_=' + Date.now(), { cache: 'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const res = await fetch(GAS_URL + '?action=list');
     const data = await res.json();
-    if(data && data.error) throw new Error(data.error);
     entries = Array.isArray(data) ? data : [];
     setStatus('live');
     return true;
   }catch(e){
-    console.error('fetchEntries failed:', e);
     setStatus('offline');
     return false;
   }
 }
 
 async function postEntry(type, text){
-  const res = await fetch(GAS_URL, {
+  await fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ type, text }),
-    cache: 'no-store'
+    body: JSON.stringify({ type, text })
   });
-  if(!res.ok) throw new Error('HTTP ' + res.status);
-  const data = await res.json();
-  if(data && data.error) throw new Error(data.error);
-  return data;
 }
 
 async function clearRemote(){
-  const res = await fetch(GAS_URL + '?action=clear&key=' + encodeURIComponent(ADMIN_CODE) + '&_=' + Date.now(), { cache: 'no-store' });
-  if(!res.ok) throw new Error('HTTP ' + res.status);
-  const data = await res.json();
-  if(data && data.error) throw new Error(data.error);
-  return data;
+  const res = await fetch(GAS_URL + '?action=clear&key=' + encodeURIComponent(ADMIN_CODE));
+  return res.json();
 }
 
 async function submitEntry(){
-  const text = input.value.trim();
-  if(!selectedType || !text) return;
+  const clean = formatText(input.value, selectedType);
+  if(!selectedType || !clean) return;
   sendBtn.disabled = true;
   statusLine.textContent = 'Sending…';
   try{
-    await postEntry(selectedType, text);
+    await postEntry(selectedType, encodeStyle() + clean);
     input.value = '';
     statusLine.textContent = 'Sent!';
     setTimeout(() => { statusLine.textContent = ''; }, 1500);
     await fetchEntries();
     render();
   }catch(e){
-    console.error('submitEntry failed:', e);
-    statusLine.textContent = "Couldn't send — " + (e.message || 'check your connection') + '.';
+    statusLine.textContent = "Couldn't send — check your connection and try again.";
     setStatus('offline');
   }
   updateSendState();
+  updatePreview();
 }
 
 /* ---------- rendering ---------- */
+const GRID_THRESHOLD = 12; // switch to professional grid past this many unique items
+
 function render(){
   const groups = {};
   let hfTotal = 0, qTotal = 0;
@@ -439,13 +656,15 @@ function render(){
   for(const e of entries){
     if(e.type === 'highfive') hfTotal++;
     if(e.type === 'question') qTotal++;
-    const key = (e.text || '').trim().toLowerCase();
+    const dec = decodeEntry(e.text);
+    const key = dec.text.trim().toLowerCase();
     if(!key) continue;
     if(!groups[key]){
-      groups[key] = { display: e.text.trim(), count: 0, highfive: 0, question: 0 };
+      groups[key] = { display: dec.text.trim(), style: dec.style, count: 0, highfive: 0, question: 0 };
     }
     groups[key].count++;
     groups[key][e.type] = (groups[key][e.type] || 0) + 1;
+    if(!groups[key].style && dec.style) groups[key].style = dec.style;
   }
 
   hfCountEl.textContent = hfTotal;
@@ -461,8 +680,15 @@ function render(){
     emptyEl.style.display = 'block';
     return;
   }
-  cloudEl.style.display = 'flex';
   emptyEl.style.display = 'none';
+
+  /* growing, more professional canvas */
+  cloudEl.classList.remove('density-2','density-3','grid-mode');
+  if(items.length > 8)  cloudEl.classList.add('density-2');
+  if(items.length > 20) cloudEl.classList.add('density-3');
+  const gridMode = items.length > GRID_THRESHOLD;
+  if(gridMode) cloudEl.classList.add('grid-mode');
+  cloudEl.style.display = gridMode ? 'grid' : 'flex';
 
   const maxCount = Math.max(...items.map(i => i.count));
   cloudEl.innerHTML = '';
@@ -470,22 +696,20 @@ function render(){
     .sort((a,b) => b.count - a.count)
     .forEach(item => {
       const type = item.highfive >= item.question ? 'highfive' : 'question';
-      const icon = type === 'highfive' ? '🙌' : '❓';
+      const defaultIcon = type === 'highfive' ? '🙌' : '❓';
+      const icon = (item.style && item.style.i) ? item.style.i : defaultIcon;
       const scale = maxCount > 1 ? (item.count - 1) / (maxCount - 1) : 0;
-      const fontSize = 14 + scale * 20;
+      const fontSize = 14 + scale * 18;
       const el = document.createElement('span');
-      el.className = 'tag raised';
-      el.style.fontSize = fontSize + 'px';
-      const h = hashStr(item.display);
-      const color = TAG_COLORS[h % TAG_COLORS.length];
-      const fontChoice = TAG_FONTS[Math.floor(h / TAG_COLORS.length) % TAG_FONTS.length];
-      el.style.color = color;
-      el.style.fontFamily = fontChoice.family;
-      el.style.fontWeight = fontChoice.weight;
-      el.style.animationDelay = (h % 50) / 10 + 's';
-      el.style.animationDuration = (4 + (h % 30) / 10) + 's';
-      el.innerHTML = icon + ' ' + escapeHtml(item.display) +
+      el.innerHTML = '<span class="icn">' + icon + '</span><span class="txt">' + escapeHtml(item.display) + '</span>' +
         (item.count > 1 ? '<span class="count">×' + item.count + '</span>' : '');
+      applyStyleToTag(el, item.style, type);
+      if(!gridMode){
+        el.style.fontSize = fontSize + 'px';
+        const h = hashStr(item.display);
+        el.style.animationDelay = (h % 50) / 10 + 's';
+        el.style.animationDuration = (4 + (h % 30) / 10) + 's';
+      }
       cloudEl.appendChild(el);
     });
 }
@@ -550,10 +774,15 @@ clearBoardBtn.addEventListener('click', async () => {
   }
 });
 
-/* ---------- admin: export board ---------- */
+/* ---------- admin: export board (captures the full grown board) ---------- */
 async function captureCanvas(){
   const target = document.getElementById('boardCapture');
-  return await html2canvas(target, { backgroundColor: '#E7E8EF', scale: 2 });
+  return await html2canvas(target, {
+    backgroundColor: '#E7E8EF',
+    scale: 2,
+    windowHeight: target.scrollHeight + 200,
+    height: target.scrollHeight
+  });
 }
 function triggerDownload(dataUrl, filename){
   const a = document.createElement('a');
